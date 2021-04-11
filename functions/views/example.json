@@ -1,0 +1,40 @@
+{
+	"name": "Producto de prueba ",
+	"thumbnail": "img.jpg",
+	"img_presentation": "imgURLimg3.jpg",
+	"description": "Interruptor termomagnetico (MCCB), línea Sentron, marco 100amp., para montajes en tableros p1, p4, p5",
+	"features": [
+		{
+			"name": "Capacidades de corriente",
+			"value": "100 a 250"
+		},
+		{
+			"name": "Capacidades de corriente",
+			"value": "100 a 250"
+		},
+		{
+			"name": "Capacidades de corriente",
+			"value": "100 a 250"
+		},
+		{
+			"name": "Capacidades de corriente",
+			"value": "100 a 250"
+		},
+		{
+			"name": "Capacidades de corriente",
+			"value": "100 a 250"
+		}
+	],
+	"downloads": [
+		{
+			"name": "Manual de usuario",
+			"description": "",
+			"url": "facebook.com"
+		},
+		{
+			"name": "Manual de instalación",
+			"description": "",
+			"url": "google.com"
+		}
+	]
+}

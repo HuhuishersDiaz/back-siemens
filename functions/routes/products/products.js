@@ -13,60 +13,115 @@ const bucket = admin.storage().bucket();
 
 router.get('/', async (req, res = response) => {
 	try {
+		const { groupby, page, item, uidNormativa, uidArea, uidType, uidFamily, q } = req.query;
 		let all = [];
 
 		let product = new ProductModel('Armando', 'David');
 
-		all = product.getAllProducts().then((data) => data);
+		all = await product.getAllProducts(page, item).then((data) => data);
 
 		res.status(200).json(all);
-	} catch (err) {
-		res.status(501).json({ ok: false, message: 'Internal error', err: err });
+	} catch (error) {
+		res.status(501).json({ ok: false, message: 'Internal error', error });
 	}
 });
 
-router.post('/', async (req, res = response) => {
+router.post('/', async (req, res) => {
 	try {
-		const {
-			name,
-			thumbnail,
-			img_presentation,
-			description,
-			normatives,
-			types,
-			areas,
-			features,
-			downloads,
-			contacto,
-			status,
-		} = req.body;
+		const data = req.body;
+		// let json = [];
+		// data.map((c) => {
+		// 	let featurs = [];
+		// 	let keys = c.features[0].split(',');
+		// 	keys.forEach((element) => {
+		// 		let featur = element.split(':');
+		// 		console.log(featur);
+		// 		featurs.push({ name: featur[0], value: featur[1] || 'N/A' });
+		// 	});
+		// 	c.features = featurs;
+		// 	// console.log(c.features[0].split(',').split(':'));
+		// 	json.push(c);
+		// });
+		let i = 0;
+		for await (let c of data) {
+			console.log(i);
 
-		let newProduct = new ProductModel(
-			name,
-			thumbnail,
-			img_presentation,
-			description,
-			normatives,
-			types,
-			areas,
-			features,
-			downloads,
-			contacto,
-			status
-		);
+			i++;
+			const {
+				name,
+				thumbnail,
+				img_presentation,
+				description,
+				normatives,
+				types,
+				areas,
+				features,
+				downloads,
+				contacto,
+				status,
+			} = c;
+			try {
+				let newProduct = new ProductModel(
+					name,
+					thumbnail,
+					img_presentation,
+					description,
+					normatives,
+					types,
+					areas,
+					features,
+					downloads,
+					contacto,
+					status
+				);
+				// console.log(newProduct);
 
-		valid = await newProduct.validateData();
-		console.log(valid);
-		if (valid === true) {
-			newProduct.saveNewProduct();
-			res.status(201).json({ ok: true, message: 'success' });
-		} else {
-			res.status(201).json({ ok: false, message: valid });
+				let valid = await newProduct.validateData();
+				// console.log(valid);
+				if (valid === true) {
+					newProduct.saveNewProduct();
+					// res.status(201).json({ ok: true, message: 'success' });
+				} else {
+					res.status(201).json({ ok: false, message: valid });
+					return false;
+				}
+			} catch (error) {
+				console.log(error);
+				res.status(201).json({ ok: false, error });
+				return false;
+			}
 		}
-		// newProduct.saveNewProduct();
-	} catch (err) {
-		res.status(500).json({ ok: false, message: 'error', err });
+
+		res.status(201).json({ ok: true, message: 'success', json });
+	} catch (error) {
+		res.status(500).json({ ok: false, message: 'error', error });
 	}
+});
+router.post('/tojson', async (req, res) => {
+	try {
+		const data = req.body;
+		let json = [];
+		data.map((c) => {
+			let featurs = [];
+			let keys = c.features[0].split(',');
+			keys.forEach((element) => {
+				let featur = element.split(':');
+				console.log(featur);
+				featurs.push({ name: featur[0], value: featur[1] || 'N/A' });
+			});
+			c.features = featurs;
+			// console.log(c.features[0].split(',').split(':'));
+			json.push(c);
+		});
+
+		res.status(201).json({ ok: true, message: 'success', json });
+	} catch (error) {
+		res.status(500).json({ ok: false, message: 'error', error });
+	}
+});
+router.post('/update', function (req, res) {
+	const { name, description } = req.body;
+	res.send(`Name name, desc description`);
 });
 
 const bucketName = 'gs://siemens-app-e35e2.appspot.com';

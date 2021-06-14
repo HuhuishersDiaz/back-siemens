@@ -40,7 +40,7 @@ router.get('/states/:id_contry', (req, res) => {
 	const { id_contry } = req.params;
 	console.log(id_contry);
 	var ref = db.ref('/countries/' + id_contry + '/countries');
-	ref.once(
+	ref.orderByChild('name').once(
 		'value',
 		(snapshot) => {
 			let states = [];

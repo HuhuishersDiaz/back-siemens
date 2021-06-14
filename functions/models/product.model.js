@@ -13,19 +13,25 @@ module.exports = class ProductModel {
 		features,
 		downloads,
 		contacto,
-		status
+		status,
+		families
 	) {
-		this.name = name;
-		this.thumbnail = thumbnail;
-		this.img_presentation = img_presentation;
-		this.description = description;
-		this.normatives = normatives || [];
-		this.types = types || [];
-		this.areas = areas || [];
-		this.features = features || [{}];
-		this.downloads = downloads || [{}];
-		this.contacto = contacto || [{}];
-		this.status = status || false;
+		try {
+			this.name = name;
+			this.thumbnail = thumbnail || 'thumbnail.png';
+			this.img_presentation = img_presentation || ['img1.jpg', 'img2.jpg'];
+			this.description = description || 'description';
+			this.normatives = normatives || [];
+			this.types = types || [];
+			this.areas = areas || [];
+			this.features = features || [];
+			this.downloads = downloads || [];
+			this.contacto = contacto || [];
+			this.status = status || false;
+			this.families = families || [];
+		} catch (error) {
+			console.log(error);
+		}
 	}
 
 	async validateData() {
@@ -35,30 +41,27 @@ module.exports = class ProductModel {
 
 		let snapshot = await db.collection('products').where('name', '==', this.name).get();
 		if (!snapshot.empty) {
-			return 'Product name already exists';
+			return 'Product name already exists ' + this.name;
 		}
 
 		for await (const normative of this.normatives) {
-			console.log(normative);
 			const exists = (await db.collection('normatives').doc(normative).get()).exists;
 			if (!exists) {
-				return 'Normative not found';
+				return 'Normative not found : ' + normative;
 			}
 		}
 
 		for await (const type of this.types) {
-			console.log(type);
 			const exists = (await db.collection('types').doc(type).get()).exists;
 			if (!exists) {
-				return 'Type not found';
+				return 'Type not found : ' + type;
 			}
 		}
 
 		for await (const area of this.areas) {
-			console.log(area);
 			const exists = (await db.collection('aplication_areas').doc(area).get()).exists;
 			if (!exists) {
-				return 'Area not found';
+				return 'Area not found : ' + area + '';
 			}
 		}
 
@@ -74,6 +77,7 @@ module.exports = class ProductModel {
 			normatives: this.normatives,
 			types: this.types,
 			areas: this.areas,
+			families: this.families,
 			features: this.features,
 			downloads: this.downloads,
 			contacto: this.contacto,
@@ -81,17 +85,32 @@ module.exports = class ProductModel {
 		};
 	}
 
-	async getAllProducts() {
-		let all = [];
-		const snapshot = await db.collection('products').get();
-		snapshot.forEach((doc) => {
-			console.log(doc.id, '=>', doc.data());
-			all.push({
-				id: doc.id,
-				data: doc.data(),
+	async getAllProducts(page = 1, limit = 10) {
+		try {
+			let all = [];
+			const first = db
+				.collection('products')
+				.orderBy('name')
+				.limit(limit * page);
+
+			const snapshot = await first.get();
+
+			const last = snapshot.docs[snapshot.docs.length - 1];
+
+			const next = db.collection('products').orderBy('name').startAfter(last.data().name).limit(parseInt(limit));
+
+			(await next.get()).docs.map((doc) => {
+				all.push({
+					id: doc.id,
+					data: doc.data(),
+				});
 			});
-		});
-		return all;
+
+			return all;
+		} catch (error) {
+			console.log(error);
+			return error;
+		}
 	}
 
 	async saveNewProduct() {

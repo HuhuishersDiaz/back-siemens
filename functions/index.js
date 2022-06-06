@@ -1,226 +1,195 @@
-const functions = require('firebase-functions');
-const express = require('express');
-const cors = require('cors')({ origin: true });
-const bodyParser = require('body-parser');
-const admin = require('firebase-admin');
-const path = require('path');
+const functions = require("firebase-functions");
+const express = require("express");
+const cors = require("cors")({ origin: true });
+const admin = require("firebase-admin");
+// const multer = require("multer");
+const nodemailer = require("nodemailer");
 
-var nodemailer = require('nodemailer');
+const serviceAccount = require("./config/siemens-app-e35e2-firebase-adminsdk-94hte-5a6db71b1e.json");
 
-serviceAccount = require('./config/siemens-app-e35e2-firebase-adminsdk-94hte-5a6db71b1e.json');
 admin.initializeApp({
-	credential: admin.credential.cert(serviceAccount),
-	databaseURL: 'https://siemens-app-e35e2-default-rtdb.firebaseio.com',
-	storageBucket: 'gs://siemens-app-e35e2.appspot.com',
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://siemens-app-e35e2-default-rtdb.firebaseio.com",
+  storageBucket: "gs://siemens-app-e35e2.appspot.com",
 });
 
 const db = admin.database();
+const bucket = admin.storage().bucket();
+const storageRef = admin.storage();
 const app = express();
 
 app.use(express.json());
+// app.use(fileupload());
 
-app.use('/public', express.static(__dirname + '/public'));
+// app.use("/public", express.static(__dirname + "/public"));
 app.use(cors);
 
-const routers_countries = require('./routes/countries');
-const { use } = require('./routes/countries');
-// const routers_users = require('./routes/users');
-// const routers_normative = require('./routes/products/normative');
-// const routers_area = require('./routes/products/aplication_area');
-// const routers_type = require('./routes/products/type');
-// const routers_products = require('./routes/products/products');
-// const training = require('./routes/training/training');
-// const localization = require('./routes/branches/branches');
+const routers_countries = require("./routes/countries");
+const { sendTextMessage } = require("./twilo");
 
-app.use('/api/countries', routers_countries);
-// app.use('/api/users', routers_users);
-// app.use('/api/products/normatives', routers_normative);
-// app.use('/api/products/area', routers_area);
-// app.use('/api/products/type', routers_type);
-// app.use('/api/products/', routers_products);
-// app.use('/api/training/', training);
-// app.use('/api/localization/', localization);
+app.use("/api/countries", routers_countries);
 
-// // /product_aplication_area
-// app.get('/', (req, res) => {
-// 	res.sendFile(path.join(__dirname + '/views/index.html'));
-// });
-app.post('/sendEmail', (req, res) => {
-	let { nombre, email, tel, fecha, hora } = req.body;
-	console.log('Entramos al metodo ');
-	var transporter = nodemailer.createTransport({
-		service: 'gmail',
-		auth: {
-			user: 'noreply@grupomedicogaleno.com',
-			pass: 'Galeno2021',
-		},
-	});
+app.post("/webhook", function (req, res) {
+  console.log("req ->", req.body);
+  sendTextMessage(req.body.WaId, req.body.Body);
+  res.status(200).json({ ok: true, msg: "Mensaje enviado correctamente" });
+});
 
-	var mailOptions = {
-		from: 'noreply@grupomedicogaleno.com',
-		to: 'contacto@grupomedicogaleno.com,armando.diaz.diaz.2409@gmail.com',
-		subject: 'Nueva cita agendada ',
-		html: `Nombre:	${nombre} <br>
+app.post("/sendEmail", (req, res) => {
+  let { nombre, email, tel, fecha, hora } = req.body;
+  console.log("Entramos al metodo ");
+  var transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "noreply@grupomedicogaleno.com",
+      pass: "Galeno2021",
+    },
+  });
+
+  var mailOptions = {
+    from: "noreply@grupomedicogaleno.com",
+    to: "contacto@grupomedicogaleno.com,armando.diaz.diaz.2409@gmail.com",
+    subject: "Nueva cita agendada ",
+    html: `Nombre:	${nombre} <br>
 		Telefono:	${email}<br>
 		Correo:	${tel}<br>
 		Fecha:	${fecha}<br>
 		Hora:	${hora}`,
-	};
+  };
 
-	transporter.sendMail(mailOptions, function (error, info) {
-		console.log(error, info);
-		if (error) {
-			res.json(false);
-		} else {
-			res.json('Email sent: ' + info.response);
-		}
-	});
+  transporter.sendMail(mailOptions, function (error, info) {
+    console.log(error, info);
+    if (error) {
+      res.json(false);
+    } else {
+      res.json("Email sent: " + info.response);
+    }
+  });
 });
 
-// exports.app = functions.https.onRequest(app);
+app.post("/Email", (req, res) => {
+  console.log(req.body);
 
-// const functions = require('firebase-functions');
-// const express = require('express');
-// const cors = require('cors')({ origin: true });
-// const admin = require('firebase-admin');
+  let { request, title } = req.body;
+  console.log("Entramos al metodo ");
+  var transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "armando.diaz.diaz.2409@gmail.com",
+      pass: "huhuishers",
+    },
+  });
 
-// var nodemailer = require('nodemailer');
+  var mailOptions = {
+    from: "noreply@ep-hub.com",
+    to: "contacto@xplainer.mx,armando.diaz.diaz.2409@gmail.com",
+    subject: "Solicitud de prestamo (demo Tracke)",
+    html: `
+		Demo:	${title}<br>
+    Nombre:	${request.name} <br>
+		Telefono:	${request.phone}<br>
+		Correo:	${request.email}<br>
+		Ubicación solicitada:	${request.location}<br>
+		Fecha Inicio:	${request.startDate}<br>
+		Fecha Fin:	${request.endDate}<br>`,
+  };
 
-// serviceAccount = require('./config/siemens-app-e35e2-firebase-adminsdk-94hte-5a6db71b1e.json');
-// admin.initializeApp({
-// 	credential: admin.credential.cert(serviceAccount),
-// 	databaseURL: 'https://siemens-app-e35e2-default-rtdb.firebaseio.com',
-// 	storageBucket: 'gs://siemens-app-e35e2.appspot.com',
-// });
-
-// const db = admin.firestore();
-// const app = express();
+  transporter.sendMail(mailOptions, function (error, info) {
+    console.log(error, info);
+    if (error) {
+      res.json({ ok: false, message: error });
+    } else {
+      res.json({ ok: true, message: "Email sent: " + info.response });
+    }
+  });
+});
 
 const middleware = (req, res, next) => {
-	console.log(req.headers);
-	if (!req.headers.authorization) {
-		return res.status(403).json({ error: 'No credentials sent!' });
-	}
-	next();
-
-	// let authHeader = req.get('authorization');
-
-	// console.log(authHeader);
-	// // idToken comes from the client app
-	// admin
-	// 	.auth()
-	// 	.verifyIdToken(idToken)
-	// 	.then((decodedToken) => {
-	// 		const uid = decodedToken.uid;
-	// 		// ...
-	// 	})
-	// 	.catch((error) => {
-	// 		// Handle error
-	// 	});
-
-	// 	console.log('req');
-	// 	console.log('res');
-	// 	console.log('next');
-	// 	next();
-	// };
+  console.log(req.headers);
+  if (!req.headers.authorization) {
+    return res.status(403).json({ error: "No credentials sent!" });
+  }
+  next();
 };
 
-// app.use(express.json());
+app.post("/imageUpload", async (req, res) => {
+  try {
+    var files = req.files[0];
+    const bucket = await admin
+      .storage()
+      .bucket()
+      .file("blogs/" + files.originalname);
 
-// app.use(cors);
+    await bucket.save(files.buffer);
+    await bucket
+      .getSignedUrl({ action: "read", expires: "03-09-2491" })
+      .then((c) => {
+        res.json({
+          url: c,
+        });
+      });
+  } catch (error) {
+    console.log(error);
+    res.status(400).send(error.message);
+  }
+});
 
-// app.get('/sendEmail', (req, res) => {
-// 	console.log('Entramos al metodo ');
-// 	console.log(req.query);
+app.post("/", middleware, async (req, res) => {
+  // app.post('/', async (req, res) => {
+  const db = admin.firestore().collection("fcmTokens");
+  const { title, description, url, role, user } = req.body;
+  var tokens = [];
+  if (user) {
+    console.log(user);
+    let token = await db
+      .doc(`${user}`)
+      .get()
+      .then((c) => c.data().token);
+    tokens.push(token);
+  } else if (role === "all") {
+    tokens = await db
+      .where("token", "!=", "null")
+      .get()
+      .then((c) => c.docs.map((doc) => doc.data().token));
+  } else {
+    tokens = await db
+      .where("role", "=", role)
+      .get()
+      .then((c) => c.docs.map((doc) => doc.data().token));
+  }
 
-// 	var transporter = nodemailer.createTransport({
-// 		service: 'gmail',
-// 		auth: {
-// 			user: 'noreply@grupomedicogaleno.com',
-// 			pass: 'Galeno2021',
-// 		},
-// 	});
+  let notification = {
+    title: title,
+    description: description,
+    url: url,
+    role: role,
+    user: user,
+    createAt: new Date().toString(),
+  };
 
-// 	var mailOptions = {
-// 		from: 'noreply@grupomedicogaleno.com',
-// 		to: 'contacto@grupomedicogaleno.com,armando.diaz.diaz.2409@gmail.com',
-// 		subject: 'Nueva cita agendada ',
-// 		html: `Nombre:	${req.query.nombre} <br>
-// 		Correo:	${req.query.email}<br>
-// 		Telefono:${req.query.tel}<br>
-// 		Fecha:	${req.query.fecha}<br>
-// 		Hora:	${req.query.hora}`,
-// 	};
+  admin.firestore().collection("notifications").add(notification);
+  const message = {
+    data: {
+      url: url,
+      role: role,
+      createAt: new Date().toString(),
+    },
+    notification: {
+      body: description,
+      title: title,
+    },
+    tokens: tokens.filter((c) => c != null),
+  };
 
-// 	transporter.sendMail(mailOptions, function (error, info) {
-// 		console.log(error, info);
-// 		if (error) {
-// 			res.json(false);
-// 		} else {
-// 			res.json('Email sent: ' + info.response);
-// 		}
-// 	});
-// });
-
-app.post('/', middleware, async (req, res) => {
-	// app.post('/', async (req, res) => {
-	const db = admin.firestore().collection('fcmTokens');
-	const { title, description, url, role, user } = req.body;
-	var tokens = [];
-	if (user) {
-		console.log(user);
-		let token = await db
-			.doc(`${user}`)
-			.get()
-			.then((c) => c.data().token);
-		tokens.push(token);
-	} else if (role === 'all') {
-		tokens = await db
-			.where('token', '!=', 'null')
-			.get()
-			.then((c) => c.docs.map((doc) => doc.data().token));
-	} else {
-		tokens = await db
-			.where('role', '=', role)
-			.get()
-			.then((c) => c.docs.map((doc) => doc.data().token));
-	}
-
-	let notification = {
-		title: title,
-		description: description,
-		url: url,
-		role: role,
-		user: user,
-		createAt: new Date().toString(),
-	};
-
-	admin.firestore().collection('notifications').add(notification);
-	const message = {
-		data: {
-			url: url,
-			role: role,
-			createAt: new Date().toString(),
-		},
-		notification: {
-			body: description,
-			title: title,
-		},
-		tokens: tokens.filter((c) => c != null),
-	};
-
-	admin
-		.messaging()
-		.sendMulticast(message)
-		.then(() => {
-			res.json({ sending: 'true' }).statusCode = 201;
-		})
-		.catch((err) => {
-			res.json({ sending: 'false', err }).statusCode = 502;
-		});
-
-	// Send a message to the device corresponding to the provided
-	// registration token.
+  admin
+    .messaging()
+    .sendMulticast(message)
+    .then(() => {
+      res.json({ sending: "true" }).statusCode = 201;
+    })
+    .catch((err) => {
+      res.json({ sending: "false", err }).statusCode = 502;
+    });
 });
 
 exports.app = functions.https.onRequest(app);

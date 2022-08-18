@@ -70,7 +70,7 @@ app.post("/sendEmail", (req, res) => {
 app.post("/Email", (req, res) => {
   console.log(req.body);
 
-  let { request, title } = req.body;
+  let { request, title , emails } = req.body;
   console.log("Entramos al metodo ");
   var transporter = nodemailer.createTransport({
     service: "gmail",
@@ -82,7 +82,7 @@ app.post("/Email", (req, res) => {
 
   var mailOptions = {
     from: "noreply@ep-hub.com",
-    to: "contacto@xplainer.mx,armando.diaz.diaz.2409@gmail.com",
+    to: emails,
     subject: "Solicitud de prestamo (demo Tracke)",
     html: `
 		Demo:	${title}<br>
@@ -105,7 +105,6 @@ app.post("/Email", (req, res) => {
 });
 
 const middleware = (req, res, next) => {
-  console.log(req.headers);
   if (!req.headers.authorization) {
     return res.status(403).json({ error: "No credentials sent!" });
   }
